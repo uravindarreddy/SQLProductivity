@@ -1,0 +1,131 @@
+$j = @"
+[
+    {
+	"partOf": {
+            "type": "Process",
+            "reference": "SourceHOV",
+            "identifier": {
+                "key": "RequestType",
+                "value": "CSUCF"
+            }
+        },
+        "task": [
+            {
+                "focus": {
+                    "type": "Account",
+                    "identifier": {
+                        "type": "AccountNumber",
+                        "value": "7518864429"
+                    },
+
+"supplement": {
+                        "key": "RequestNumber",
+                        "value": "1202201"
+                    }
+                }
+            },
+		{
+                "focus": {
+                    "type": "Account",
+                    "identifier": {
+                        "type": "AccountNumber",
+                        "value": "7518864445"
+                    },
+                    "supplement": {
+                        "key": "RequestNumber",
+                        "value": "1202202"
+                    }
+                }
+            }
+		]
+	},
+	{
+	"partOf": {
+            "type": "Process",
+            "reference": "SourceHOV",
+            "identifier": {
+                "key": "RequestType",
+                "value": "CHRTY"
+            }
+        },
+        "task": [
+            {
+                "focus": {
+                    "type": "Account",
+                    "identifier": {
+                        "type": "AccountNumber",
+                        "value": "7518864446"
+                    },
+                    "supplement": {
+                        "key": "RequestNumber",
+                        "value": "1202209"
+                    }
+                }
+            },
+	     {
+                "focus": {
+                    "type": "Account",
+                    "identifier": {
+                        "type": "AccountNumber",
+                        "value": "7518864486"
+                    },
+                    "supplement": {
+						"key": "RequestNumber",
+                        "value": "1202211"
+                    }
+                }
+            }
+	]
+   }
+]
+"@ | ConvertFrom-Json; 
+
+<#
+##### Possible Solution
+$j | select @{Name="RequestDetails";E={$_.partOf | Select -Expand identifier}}, task,`
+@{name = "Reference";E={$_.partOf | select -expand reference}}, `
+@{name = "PartOfType";E={$_.partOf | select -expand type}}`
+|select @{Name="RequestKey";E={$_.RequestDetails | Select -Expand key}}, @{Name="RequestType";E={$_.RequestDetails | Select -Expand value}}`
+, Reference, PartOfType, @{name = "focus"; E={$_.task | select -expand focus}} `
+|select RequestKey, RequestType, Reference, PartOfType `
+, @{Name="TaskType";E={$_.focus | Select -Expand type}} `
+, @{Name="AccIdentifier";E={$_.focus | Select -Expand identifier}} `
+, @{Name="supplement";E={$_.focus | Select -Expand supplement}} `
+|select RequestKey, RequestType, Reference, PartOfType `
+,@{Name="RequestNumberKey";E={$_.supplement | Select -Expand key}}, @{Name="RequestNumber";E={$_.supplement | Select -Expand value}}`
+,@{Name="AccountNumberKey";E={$_.AccIdentifier | Select -Expand type}}, @{Name="AccountNumber";E={$_.AccIdentifier | Select -Expand value}}`
+|select 
+#>
+
+
+<#
+
+$j | select @{name = "AttributType";E={$_.partOf | select -expand type}}, `
+@{name = "Reference";E={$_.partOf | select -expand reference}}, `
+@{Name="key";E={$_.identifier | Select -Expand key}}, @{Name="value";E={$_.identifier | Select -Expand value}}
+@{name = "task"; E={$_.task | select -expand focus}} ,`
+#>
+<#
+$j| select identifier |select  @{Name="key";E={$_.identifier | Select -Expand key}}, @{Name="value";E={$_.identifier | Select -Expand value}}  `
+| select @{Name="type";E={$_.identifier | Select -Expand type}}, @{Name="AccountNumber";E={$_.identifier | Select -Expand value}} `
+ , @{Name="key";E={$_.supplement | Select -Expand key}}, @{Name="RequestNumber";E={$_.supplement | Select -Expand value}} | Format-Table 
+
+ #>
+#$j.task.focus | select @{Name="type";E={$_.identifier | Select -Expand type}}, @{Name="AccountNumber";E={$_.identifier | Select -Expand value}} `
+# , @{Name="key";E={$_.supplement | Select -Expand key}}, @{Name="RequestNumber";E={$_.supplement | Select -Expand value}} | Format-Table 
+<#
+$j | select task | select @{name = "focus"; E={$_.task | select -expand focus}} | select  @{Name="supplement";E={$_.focus | Select -Expand supplement}} `
+| select @{Name="RequestNumberKey";E={$_.supplement | Select -Expand key }}, @{Name="RequestNumber";E={$_.supplement | Select -Expand value}} | format-table
+#>
+##### Final Solution
+
+$j | select task -Expand partOf | select reference, task -Expand identifier `
+| select reference, @{Name="RequestTypeKey";E={$_.key}}, @{Name="RequestType";E={$_.value}} -Expand task `
+| select reference, RequestTypeKey, RequestType -Expand focus `
+| select reference, RequestTypeKey, RequestType, @{Name="TaskType";E={$_.type}}, identifier -Expand supplement `
+| select reference, RequestTypeKey, RequestType, TaskType `
+, @{Name="RequestNumberKey";E={$_.key}}, @{Name="RequestNumber";E={$_.Value}} -Expand identifier `
+| select reference, RequestType, RequestNumber `
+, @{Name="AccountNumber";E={$_.Value}} `
+| Format-Table
+
